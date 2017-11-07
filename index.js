@@ -1,5 +1,6 @@
 'use strict';
 
+
 const express = require('express');
 const bodyParser = require('body-parser');
 var pos = 0;
@@ -16,61 +17,143 @@ restService.post('/echo', function(req, res) {
 
   const assistant = new Assistant({ request: req, response: res });
   var message = assistant.getArgument('echoText').toLowerCase();
-  var song = "talk";
-  //palavras globais
-  var events = "events";
-  // var pucrs = "pucrs";
-  var building = "building";
-  var smartcity = "smart city";
+  var events = "eventos";
+  ///////
+  var fs = require('fs');
+  var readline = require('readline');
+  var google = require('googleapis');
+  var googleAuth = require('google-auth-library');
 
-  //prédios
-  var p32 = "32";
-  var p30 = "30";
+// If modifying these scopes, delete your previously saved credentials
+// at ~/.credentials/calendar-nodejs-quickstart.json
+  var SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
+  var TOKEN_DIR = (process.env.HOME || process.env.HOMEPATH ||
+    process.env.USERPROFILE) + '/.credentials/';
+  var TOKEN_PATH = TOKEN_DIR + 'calendar-nodejs-quickstart.json';
+ 
+ if(message.indexOf(eventos) > -1) {
+    // Load client secrets from a local file.
+    fs.readFile('client_secret.json', function processClientSecrets(err, content) {
+      if (err) {
+        console.log('Error loading client secret file: ' + err);
+        return;
+      }
+      // Authorize a client with the loaded credentials, then call the
+      // Google Calendar API.
+      authorize(JSON.parse(content), listEvents);
+    });
 
-  //biblioteca
-  var book = "book";
-  var book1 = "designing interfaces";
-  var book2 = "agile";
-  var keyword = "software development";
+    /**
+     * Create an OAuth2 client with the given credentials, and then execute the
+     * given callback function.
+     *
+     * @param {Object} credentials The authorization client credentials.
+     * @param {function} callback The callback to call with the authorized client.
+     */
+    function authorize(credentials, callback) {
+      var clientSecret = credentials.installed.client_secret;
+      var clientId = credentials.installed.client_id;
+      var redirectUrl = credentials.installed.redirect_uris[0];
+      var auth = new googleAuth();
+      var oauth2Client = new auth.OAuth2(clientId, clientSecret, redirectUrl);
 
-    //EVENTOS
-    if(message.indexOf(smartcity) > -1) {
-      sendResponse("Smart cities are projects in which a given urban space is the scene of intensive experiences of communication and information technologies sensitive to the Internet of Things context, of urban management and social action driven by data.");
-    }//else
-    //
-    // if(message.indexOf(song) > -1) {
-    //   sendResponse('<speak> playing audio news <audio src="https://leafarmd.000webhostapp.com/news2.mp3"></audio></speak>')
-    // }else
-    //
-    // //Sessão de eventos
-
-    // //BIBLIOTECA
-    if(message.indexOf(book) > -1) {
-        if(message.indexOf(book1) > -1) { //book1 = "designing interfaces";
-          sendResponse("<speak>The book designing interfaces is available for lease for 7 days. Its location is on the 3rd floor, shelf number 16.</speak>");
-        }else
-        if(message.indexOf(book2) > -1) { //book2 = "scrum";
-          sendResponse("<speak>This book is not available. Borrowed until Oct 16, 2017 22:50.</speak>");
-        }else
-        if(message.indexOf(keyword) > -1) {
-          sendResponse("<speak>The books: Software development rhythms, Software development failures, Running an agile software development project and Using aspect-oriented programming for trustworthy software development are the results returned from your search.</speak>");
-        }else
-          sendResponse("<speak>No books were identified with this title.</speak>");
-    }else
-
-    if(message.indexOf(events) > -1) {
-        if(message.indexOf(building) > -1) {
-              if(message.indexOf(p30) > -1) {
-                sendResponse("<speak>There will be an event called Electrical Engineering, on October 16, 2017, at 5:30 p.m. in room 201 of building 30, second floor.</speak>");
-              }else if(message.indexOf(p32) > -1) {
-                sendResponse("<speak>There will be an event called Smart Cities and IoT, on October 16, 2017, at 6:00 pm in the ground floor auditorium of building 32.</speak>");
-              }else
-                sendResponse("<speak>No events were identified in the building mentioned.</speak>");
-        }else
-          sendResponse("<speak>There will be an event called Entrepreneurship in the academic world, on October 16, 2017, at 7:00 pm in the auditorium of building 15, second floor. There will be an event called Legislation and Philosophy, on October 16, 2017, at 4:00 p.m. in Room 303 of Building 11 on the third floor.</speak>");
-    }else {
-      sendResponse("sorry, i cant help you with that.");
+      // Check if we have previously stored a token.
+      fs.readFile(TOKEN_PATH, function(err, token) {
+        if (err) {
+          getNewToken(oauth2Client, callback);
+        } else {
+          oauth2Client.credentials = JSON.parse(token);
+          callback(oauth2Client);
+        }
+      });
     }
+
+    /**
+     * Get and store new token after prompting for user authorization, and then
+     * execute the given callback with the authorized OAuth2 client.
+     *
+     * @param {google.auth.OAuth2} oauth2Client The OAuth2 client to get token for.
+     * @param {getEventsCallback} callback The callback to call with the authorized
+     *     client.
+     */
+    function getNewToken(oauth2Client, callback) {
+      var authUrl = oauth2Client.generateAuthUrl({
+        access_type: 'offline',
+        scope: SCOPES
+      });
+      console.log('Authorize this app by visiting this url: ', authUrl);
+      var rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+      });
+      rl.question('Enter the code from that page here: ', function(code) {
+        rl.close();
+        oauth2Client.getToken(code, function(err, token) {
+          if (err) {
+            console.log('Error while trying to retrieve access token', err);
+            return;
+          }
+          oauth2Client.credentials = token;
+          storeToken(token);
+          callback(oauth2Client);
+        });
+      });
+    }
+
+
+    /**
+     * Store token to disk be used in later program executions.
+     *
+     * @param {Object} token The token to store to disk.
+     */
+    function storeToken(token) {
+      try {
+        fs.mkdirSync(TOKEN_DIR);
+      } catch (err) {
+        if (err.code != 'EEXIST') {
+          throw err;
+        }
+      }
+      fs.writeFile(TOKEN_PATH, JSON.stringify(token));
+      console.log('Token stored to ' + TOKEN_PATH);
+    }
+
+    /**
+     * Lists the next 10 events on the user's primary calendar.
+     *
+     * @param {google.auth.OAuth2} auth An authorized OAuth2 client.
+     */
+    function listEvents(auth) {
+      var calendar = google.calendar('v3');
+      calendar.events.list({
+        auth: auth,
+        calendarId: 'primary',
+        timeMin: (new Date()).toISOString(),
+        maxResults: 10,
+        singleEvents: true,
+        orderBy: 'startTime'
+      }, function(err, response) {
+        if (err) {
+          sendResponse('The API returned an error: ' + err);
+          return;
+        }
+        var events = response.items;
+        if (events.length == 0) {
+          sendResponse('No upcoming events found.');
+        } else {
+          console.log('Upcoming 10 events:');
+          for (var i = 0; i < events.length; i++) {
+            var event = events[i];
+            var start = event.start.dateTime || event.start.date;
+            sendResponse('%s - %s', start, event.summary);
+          }
+        }
+      });
+    }
+}else {
+      sendResponse("Desculpa, eu não posso ajudar com isso.");
+    }
+
 
     function sendResponse(msg) {
       assistant.ask(msg);
@@ -81,3 +164,4 @@ restService.post('/echo', function(req, res) {
 restService.listen((process.env.PORT || 8000), function() {
     console.log("Server up and listening");
 });
+    
