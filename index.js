@@ -35,7 +35,7 @@ restService.post('/echo', function(req, res) {
     // Load client secrets from a local file.
     fs.readFile('client_secret.json', function processClientSecrets(err, content) {
       if (err) {
-        console.log('Error loading client secret file: ' + err);
+        //console.log('Error loading client secret file: ' + err);
         return;
       }
       // Authorize a client with the loaded credentials, then call the
@@ -81,7 +81,7 @@ restService.post('/echo', function(req, res) {
         access_type: 'offline',
         scope: SCOPES
       });
-      console.log('Authorize this app by visiting this url: ', authUrl);
+      //console.log('Authorize this app by visiting this url: ', authUrl);
       var rl = readline.createInterface({
         input: process.stdin,
         output: process.stdout
@@ -90,7 +90,7 @@ restService.post('/echo', function(req, res) {
         rl.close();
         oauth2Client.getToken(code, function(err, token) {
           if (err) {
-            console.log('Error while trying to retrieve access token', err);
+           // console.log('Error while trying to retrieve access token', err);
             return;
           }
           oauth2Client.credentials = token;
@@ -115,7 +115,7 @@ restService.post('/echo', function(req, res) {
         }
       }
       fs.writeFile(TOKEN_PATH, JSON.stringify(token));
-      console.log('Token stored to ' + TOKEN_PATH);
+     // console.log('Token stored to ' + TOKEN_PATH);
     }
 
     /**
@@ -125,6 +125,7 @@ restService.post('/echo', function(req, res) {
      */
     function listEvents(auth) {
       var calendar = google.calendar('v3');
+      var mensagem = "";
       calendar.events.list({
         auth: auth,
         calendarId: 'primary',
@@ -134,18 +135,19 @@ restService.post('/echo', function(req, res) {
         orderBy: 'startTime'
       }, function(err, response) {
         if (err) {
-          sendResponse('The API returned an error: ' + err);
+          sendResponse('The API returned an error: ');
           return;
         }
         var events = response.items;
         if (events.length == 0) {
           sendResponse('No upcoming events found.');
         } else {
-          console.log('Upcoming 10 events:');
+          sendResponse('Upcoming 10 events:');
           for (var i = 0; i < events.length; i++) {
             var event = events[i];
             var start = event.start.dateTime || event.start.date;
-            sendResponse('%s - %s', start, event.summary);
+            mensagem  = mensagem + start + "-" + event.summary + "/n";
+            sendResponse(mensagem);
           }
         }
       });
