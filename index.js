@@ -101,7 +101,7 @@ restService.post('/echo', function(req, res) {
     }
 
 
-    /**
+    /**s
      * Store token to disk be used in later program executions.
      *
      * @param {Object} token The token to store to disk.
