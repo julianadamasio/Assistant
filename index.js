@@ -17,7 +17,7 @@ restService.post('/echo', function(req, res) {
 
   const assistant = new Assistant({ request: req, response: res });
   var message = assistant.getArgument('echoText').toLowerCase();
-  var events = "eventos";
+  var eventos = "eventos";
   ///////
   var fs = require('fs');
   var readline = require('readline');
